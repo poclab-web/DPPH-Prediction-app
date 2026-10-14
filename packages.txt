@@ -1,1 +1,4 @@
 libgomp1
+libcairo2
+libxrender1
+libxext6

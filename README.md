@@ -9,7 +9,7 @@
 - Repository：公開先のリポジトリ
 - Branch：`master`
 - Main file path：`main.py`
-- `packages.txt`：LightGBM用のOpenMPランタイム（`libgomp1`）
+- `packages.txt`：LightGBM用のOpenMPランタイム（`libgomp1`）とRDKit描画用のCairo・X11ライブラリ（`libcairo2`、`libxrender1`、`libxext6`）
 
 `environment.yml` があるとcondaが優先されるため、ローカル用ファイルは
 `environment.local.yml` という名前にしています。改名・追加をまとめてGitHubに反映してください。

@@ -12,7 +12,6 @@ from sklearn.isotonic import IsotonicRegression
 from joblib.numpy_pickle import NumpyUnpickler
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdDepictor
-from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.DataStructs import ConvertToNumpyArray
 
 CLASS_LABELS = {0: "Low", 1: "Middle", 2: "High"}
@@ -248,6 +247,9 @@ def project_shap_to_molecule(
     """保存済みbitInfoを使い、fingerprint SHAP値を原子・結合へ投影する。"""
     if not 0 <= compound_index < len(molecules):
         raise IndexError(f"compound_indexが範囲外です: {compound_index}")
+
+    # Drawing dependencies are only needed for molecular visualization.
+    from rdkit.Chem.Draw import rdMolDraw2D
 
     mol = Chem.Mol(molecules[compound_index])
     bit_info = bitinfo_list[compound_index]
