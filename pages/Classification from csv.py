@@ -1,162 +1,61 @@
-import base64
-import pickle
-import numpy as np
 import pandas as pd
 import streamlit as st
-from streamlit_ketcher import st_ketcher
-from rdkit import Chem
-from rdkit.Chem import Descriptors, Draw, PandasTools
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.transform import factor_cmap
-from function.generate import generate_fingerprint_df, mol_to_base64, add_phenol_check, add_descriptor
+from rdkit.Chem import Fragments
+from function.ui import sidebar, t, display_results, class_caption
+from function.classification import load_classification_model, classification_features, prediction_frame
 
 # ページの設定
-st.markdown("# DPPH Classification from CSV")
-smiles_file = st.file_uploader('smilesのcsvファイルをアップロードしてください。', type = 'csv')
-with open('smiles_example.csv', 'rb')as file:
-    st.download_button('Download a sample file', file, 'sample.csv')
+sidebar()
+st.title(t("CSVから分類", "Classification from CSV"))
+st.subheader(t("CSVの書き方", "How to prepare your CSV"))
+st.markdown(t(
+    """1. **1行目に列名**を入れてください。構造の列名は **`SMILES`** を推奨します（`smiles`、`iso_SMILES`も使えます）。
+2. **1行につき1化合物**のSMILESを入力してください。構造の列は1つだけ用意してください。
+3. `name`などの識別用の列は任意で追加できます。これらの列も結果CSVに残ります。
+4. **カンマ区切り・UTF-8形式のCSV**で保存してください。Excelでは「CSV UTF-8（コンマ区切り）」を選びます。""",
+    """1. Put **column names in the first row**. Use **`SMILES`** for the structure column (`smiles` and `iso_SMILES` are also accepted).
+2. Enter **one compound per row**, with one SMILES column in the file.
+3. Optional columns such as `name` can identify compounds. These columns are retained in the results CSV.
+4. Save as a **comma-separated UTF-8 CSV**. In Excel, choose “CSV UTF-8 (Comma delimited)”.""",
+))
+sample_csv = "name,SMILES\nphenol,Oc1ccccc1\ncatechol,Oc1ccccc1O\n"
+st.code(sample_csv, language="text")
+st.info(t(
+    "SMILESの空欄や不正な構造がある場合、またはフェノール構造を含まない化合物がある場合は、ファイル全体の予測を停止します。化合物名だけでは予測できません。",
+    "Prediction stops for the entire file if any SMILES is missing or invalid, or if any compound has no phenol structure. Compound names alone cannot be used for prediction.",
+))
+st.caption(t(
+    "値にカンマを含む場合は、その値を二重引用符で囲んでください。予測結果にはクラス（0=低、1=中、2=高）と各クラスの確率が追加されます。ダウンロードする結果の列名・ラベルは英語です。",
+    'Enclose values containing commas in double quotes. Results add a class (0=Low, 1=Middle, 2=High) and its class probabilities. Downloaded column names and labels are in English.',
+))
+st.download_button(t("サンプルCSVをダウンロード", "Download a sample CSV"),
+                   sample_csv.encode("utf-8-sig"), "sample.csv", mime="text/csv")
+smiles_file = st.file_uploader(t("SMILESを含むCSVをアップロードしてください。", "Upload a CSV containing SMILES."), type='csv')
 
-if st.button('Predict_uploaded_file'):
-    df = pd.read_csv(smiles_file)
-    errors = []
-    keys = []
-    smiless = []
+load_model = st.cache_resource(load_classification_model)
+class_caption()
 
-    if 'SMILES' in df.columns:
-        smiless = df['SMILES']
-    elif 'smiles' in df.columns:
-        smiless = df['smiles']
-        df = df.rename(columns={'smiles': 'SMILES'})
-    else:
-        for column in df.columns:
-            for n, smiles in enumerate(df[column]):
-                try:
-                    smiless.append(smiles)
-                    keys.append(n)
-                except Exception as e:
-                    errors.append((smiles, str(e)))
-
-    if errors:
-        st.error(f"Errors occurred while processing the following SMILES: {errors}")
-
-    PandasTools.AddMoleculeColumnToFrame(df, smilesCol="SMILES")
-
-    df = add_phenol_check(df)
-
-    if (df["fr_Ar_OH"] == 0).any() or (df["fr_phenol"] == 0).any():
-        st.write("Some rows do not contain phenol.")
+if st.button(t("アップロードしたCSVを予測", "Predict uploaded CSV")):
+    if smiles_file is None:
+        st.error(t("CSVファイルをアップロードしてください。", "Please upload a CSV file."))
+        st.stop()
+    try:
+        df = pd.read_csv(smiles_file)
+        smiles_column = next((c for c in ("SMILES", "smiles", "iso_SMILES") if c in df.columns), None)
+        if smiles_column is None:
+            raise ValueError(t("SMILES、smiles、iso_SMILESのいずれかの列が必要です。", "CSV requires a SMILES, smiles or iso_SMILES column."))
+        features, molecules, _ = classification_features(df[smiles_column])
+    except (ValueError, pd.errors.ParserError) as exc:
+        st.error(t("CSVまたはSMILESを確認してください。SMILES列の欠損や不正な入力がないか確認してください。", str(exc)))
         st.stop()
 
-    else:
-        # フィンガープリント生成
-        fp_df = generate_fingerprint_df(df)
+    if any(Fragments.fr_Ar_OH(mol) == 0 or Fragments.fr_phenol(mol) == 0 for mol in molecules):
+        st.error(t("フェノール構造を含まない行があります。", "Some rows do not contain phenol."))
+        st.stop()
 
-        # 予測
-        with open("Classification_model.pkl", "rb") as f:
-            loaded_model = pickle.load(f)
-
-        Prediction = loaded_model.predict(fp_df)
-        df['Prediction'] = Prediction
-        
-        st.dataframe(df)
-        csv = df.to_csv().encode("utf-8")
-        st.download_button('Download the Prediction', csv, 'Prediction_Classification.csv')
-
-# 化合物空間の表示
-if st.button("Show FooDB Area"):
-    df = pd.read_csv(smiles_file)
-    errors = []
-    keys = []
-    smiless = []
-
-    # FooDB のデータを読み込む
-    df_FooDB = pd.read_csv("chem_area_fr_Ar_OH_1_FooDB.csv")
-    df_FooDB = df_FooDB[["name", "iso_SMILES", "mw", "MolLogP"]]
-    df_FooDB["Data_source"] = "FooDB"
-    PandasTools.AddMoleculeColumnToFrame(df_FooDB, "iso_SMILES")
-
-    # 分子画像を Base64 に変換
-    df_FooDB["base64image"] = df_FooDB["ROMol"].apply(mol_to_base64)
-
-    if 'SMILES' in df.columns:
-        smiless = df['SMILES']
-    elif 'smiles' in df.columns:
-        smiless = df['smiles']
-        df = df.rename(columns={'smiles': 'SMILES'})
-    else:
-        for column in df.columns:
-            for n, smiles in enumerate(df[column]):
-                try:
-                    smiless.append(smiles)
-                    keys.append(n)
-                except Exception as e:
-                    errors.append((smiles, str(e)))
-
-    if errors:
-        st.error(f"Errors occurred while processing the following SMILES: {errors}")
-
-    # データフレームの作成
-    PandasTools.AddMoleculeColumnToFrame(df, smilesCol="SMILES")
-    df = add_descriptor(df)
-    df["base64image"] = df["ROMol"].apply(mol_to_base64)
-    df = df.rename(columns={'SMILES': 'iso_SMILES'})
-    df["Data_source"] = "Test"
-
-    df_FooDB = df_FooDB.rename(columns={'mw': 'MolWt'})
-
-    df = df[["iso_SMILES", "MolLogP", "MolWt", "base64image", "Data_source"]]
-    df_FooDB = df_FooDB[["iso_SMILES", "MolLogP", "MolWt", "base64image", "Data_source"]]
-
-    # データフレームの結合
-    df_FooDB_2 = pd.concat([df_FooDB, df], axis=0)
-
-    # Bokeh用データソース
-    source = ColumnDataSource(df_FooDB_2[["iso_SMILES", "MolLogP", "MolWt", "base64image", "Data_source"]])
-
-    # 図を作成
-    p = figure(
-        title="mw vs. MolLogP (fr_Ar_OH = 1)",
-        x_axis_label="mw",
-        y_axis_label="MolLogP",
-        tools="hover, pan, box_zoom, reset, wheel_zoom",
-        match_aspect=False,  # 縦横比を固定
-    )
-
-    # データポイントをプロット（色分け）
-    p.scatter(
-        x="MolWt",
-        y="MolLogP",
-        source=source,
-        size=8,
-        line_color=None,
-        fill_color=factor_cmap(
-            "Data_source",
-            palette=["blue", "gray"],  # Test は青色、FooDB は灰色
-            factors=["Test", "FooDB"],
-        ),
-        legend_field="Data_source",
-        alpha=0.6,
-    )
-
-    # ツールチップを設定
-    hover = HoverTool()
-    hover.tooltips = """
-        <div>
-            <div>
-                <img src="data:image/png;base64,@base64image" style="max-width: 200px;"/>
-            </div>
-            <div>
-                <span style="font-size: 12px; color: #2f7cf7;">Source:</span>
-                <span style="font-size: 12px;">@Data_source</span>
-            </div>
-        </div>
-    """
-    p.add_tools(hover)
-
-    # 凡例の位置と設定
-    p.legend.location = "top_right"  # 右上に配置
-    p.legend.background_fill_alpha = 0.5  # 背景の透明度を設定
-
-    # Streamlit で Bokeh を表示
-    st.bokeh_chart(p)
+    result = prediction_frame(load_model(), features)
+    for column in result:
+        df[column] = result[column].to_numpy()
+    st.dataframe(display_results(df))
+    csv = df.to_csv(index=False).encode("utf-8-sig")
+    st.download_button(t("予測結果をダウンロード", "Download predictions"), csv, 'Prediction_Classification.csv', mime="text/csv")

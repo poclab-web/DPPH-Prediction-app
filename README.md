@@ -33,17 +33,23 @@ streamlit run main.py
 
 ## 機能の説明
 
-### Regression from Draw (fr_Ar_OH = 1 の化合物のみ)
-構造式を入力することで `pIC50` の予測値を取得できます。
-  
-### Regression from CSV (fr_Ar_OH = 1 の化合物のみ)
-`SMILES` が記載された CSV ファイルをアップロードすることで、 `pIC50` の予測値を加えた CSV ファイルをダウンロードできます。
-  
+分類ページは `best_ordinal_lgbm_pava.pkl` を使用します。
+`ordinal_lightgbm_classification.ipynb` と同じ半径3・2048ビットのMorgan fingerprint、
+累積二値LightGBM、PAVA確率補正で推論します。再学習は不要です。
+結果は `0 = Low / 1 = Middle / 2 = High` と各クラスの確率を表示・CSV出力します。
+ラベル名はノートブックの予測CSV出力に合わせています（一部の図のラベルとは異なります）。
+Drawの構造寄与表示は、PAVA補正前の2つの分類器に対するSHAPです。
+独自クラスと読み込み処理は `function/classification.py` にあります。
+
+### 回帰ページ（改修中）
+回帰予測は一時停止しています。直接ページを開いても改修中の案内のみ表示します。
+
+### 表示言語
+サイドバーの「言語 / Language」で日本語・英語を切り替えられます。選択はページ移動後も維持されます。
+予測CSVの列名・ラベルは互換性のため英語で保存します。
+
 ### Classification from Draw
 構造式を入力することで `DPPH` 活性の判定予測が得られます。また、その予測に影響を与えた構造が表示されます。
   
 ### Classification from CSV
 `SMILES` が記載された CSV ファイルをアップロードすることで、 `DPPH` 活性の判定予測を加えた CSV ファイルをダウンロードできます。
-  
-### Show FooDB Area (全ページ共通ボタン)
-入力された化合物が `FooDB` の化合物範囲 (`fr_Ar_OH = 1`) のどこに位置するのかを可視化します。

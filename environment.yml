@@ -1,4 +1,4 @@
-name: HP
+name: streamlit_DPPH
 channels:
   - anaconda
   - conda-forge

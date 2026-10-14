@@ -1,4 +1,12 @@
-import base64
+import streamlit as st
+from function.ui import sidebar, t
+
+sidebar()
+st.title(t("構造式から回帰", "Regression from Draw"))
+st.info(t("現在改修中です。回帰予測は一時的にご利用いただけません。", "Under maintenance. Regression predictions are temporarily unavailable."))
+st.stop()
+
+# Legacy regression implementation retained for the planned renovation.
 import pickle
 import pandas as pd
 import streamlit as st
@@ -6,10 +14,7 @@ import lightgbm as lgb
 from streamlit_ketcher import st_ketcher
 from rdkit import Chem
 from rdkit.Chem import Descriptors, PandasTools
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.transform import factor_cmap
-from function.generate import generate_fingerprint_df, mol_to_base64, add_phenol_check
+from function.generate import generate_fingerprint_df, add_phenol_check
 from function.generate import calculate_o1_charge_for_phenol_derivatives, calculate_descriptors
 import xgboost as xgb
 
@@ -70,79 +75,3 @@ if st.button("Start prediction"):
 
 
 # 化合物空間の表示
-if st.button("Show FooDB Area"):
-
-    # FooDB のデータを読み込む
-    df_FooDB = pd.read_csv("chem_area_fr_Ar_OH_1_FooDB.csv")
-    df_FooDB = df_FooDB[["name", "iso_SMILES", "mw", "MolLogP"]]
-    df_FooDB["Data_source"] = "FooDB"
-    PandasTools.AddMoleculeColumnToFrame(df_FooDB, "iso_SMILES")
-
-    # 分子画像を Base64 に変換
-    df_FooDB["base64image"] = df_FooDB["ROMol"].apply(mol_to_base64)
-
-    # import smilesの情報を取得
-    input_mol_mw = Descriptors.MolWt(input_mol)
-    input_mol_logp = Descriptors.MolLogP(input_mol)
-
-    # データフレームの作成
-    df_test = pd.DataFrame([["test_compound", search_smiles, input_mol_mw, input_mol_logp, "Test"]], columns=["name", "iso_SMILES", "mw", "MolLogP", "Data_source"])
-    PandasTools.AddMoleculeColumnToFrame(df_test, "iso_SMILES")
-    df_test["base64image"] = df_test["ROMol"].apply(mol_to_base64)
-
-    # データフレームの結合
-    df_FooDB_2 = pd.concat([df_FooDB, df_test], axis=0)
-
-    # Bokeh用データソース
-    source = ColumnDataSource(df_FooDB_2[["iso_SMILES", "name", "MolLogP", "mw", "base64image", "Data_source"]])
-
-    # 図を作成
-    p = figure(
-        title="mw vs. MolLogP (fr_Ar_OH = 1)",
-        x_axis_label="mw",
-        y_axis_label="MolLogP",
-        tools="hover, pan, box_zoom, reset, wheel_zoom",
-        match_aspect=False,  # 縦横比を固定
-    )
-
-    # データポイントをプロット（色分け）
-    p.scatter(
-        x="mw",
-        y="MolLogP",
-        source=source,
-        size=8,
-        line_color=None,
-        fill_color=factor_cmap(
-            "Data_source",
-            palette=["blue", "gray"],  # Test は青色、FooDB は灰色
-            factors=["Test", "FooDB"],
-        ),
-        legend_field="Data_source",
-        alpha=0.6,
-    )
-
-    # ツールチップを設定
-    hover = HoverTool()
-    hover.tooltips = """
-        <div>
-            <div>
-                <span style="font-size: 12px; color: #2f7cf7;">Name:</span>
-                <span style="font-size: 12px;">@name</span>
-            </div>
-            <div>
-                <img src="data:image/png;base64,@base64image" style="max-width: 200px;"/>
-            </div>
-            <div>
-                <span style="font-size: 12px; color: #2f7cf7;">Source:</span>
-                <span style="font-size: 12px;">@Data_source</span>
-            </div>
-        </div>
-    """
-    p.add_tools(hover)
-
-    # 凡例の位置と設定
-    p.legend.location = "top_right"  # 右上に配置
-    p.legend.background_fill_alpha = 0.5  # 背景の透明度を設定
-
-    # Streamlit で Bokeh を表示
-    st.bokeh_chart(p)
