@@ -29,8 +29,8 @@ if st.button(t("予測を開始", "Start prediction")):
     st.dataframe(display_results(result), hide_index=True)
     st.caption(t("構造の寄与（PAVA補正前）：赤は正の寄与、青は負の寄与を示します。", "SHAP before PAVA calibration: red = positive, blue = negative contribution."))
     for title, tree_model in [
-        (t("中・高への寄与", "Contribution toward Middle / High"), loaded_model.model.model_above_low_),
-        (t("高への寄与", "Contribution toward High"), loaded_model.model.model_high_),
+        (t("Low・Highへの寄与", "Contribution toward Low / High"), loaded_model.model.model_above_low_),
+        (t("Highへの寄与", "Contribution toward High"), loaded_model.model.model_high_),
     ]:
         st.write(title)
         # Native LightGBM Tree SHAP; the final column is the expected value.

@@ -25,8 +25,8 @@ st.info(t(
     "Prediction stops for the entire file if any SMILES is missing or invalid, or if any compound has no phenol structure. Compound names alone cannot be used for prediction.",
 ))
 st.caption(t(
-    "値にカンマを含む場合は、その値を二重引用符で囲んでください。予測結果にはクラス（0=低、1=中、2=高）と各クラスの確率が追加されます。ダウンロードする結果の列名・ラベルは英語です。",
-    'Enclose values containing commas in double quotes. Results add a class (0=Low, 1=Middle, 2=High) and its class probabilities. Downloaded column names and labels are in English.',
+    "値にカンマを含む場合は、その値を二重引用符で囲んでください。予測結果にはクラス（0=Not detected、1=Low、2=High）と各クラスの確率が追加されます。ダウンロードする結果の列名・ラベルは英語です。",
+    'Enclose values containing commas in double quotes. Results add a class (0=Not detected, 1=Low, 2=High) and its class probabilities. Downloaded column names and labels are in English.',
 ))
 st.download_button(t("サンプルCSVをダウンロード", "Download a sample CSV"),
                    sample_csv.encode("utf-8-sig"), "sample.csv", mime="text/csv")

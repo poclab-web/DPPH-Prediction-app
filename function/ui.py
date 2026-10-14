@@ -32,11 +32,15 @@ def display_results(df):
     if st.session_state.get("language", "日本語") != "日本語":
         return df
     df = df.copy()
-    if "Predicted_label" in df:
-        df["Predicted_label"] = df["Predicted_label"].map({"Low": "低", "Middle": "中", "High": "高"})
     return df.rename(columns={"Prediction": "予測クラス", "Predicted_label": "予測ラベル",
-        "probability_low": "低の確率", "probability_middle": "中の確率", "probability_high": "高の確率"})
+        "probability_not_detected": "Not detectedの確率", "probability_low": "Lowの確率", "probability_high": "Highの確率"})
+
 
 
 def class_caption():
-    st.caption(t("分類：0 = 低 / 1 = 中 / 2 = 高", "Classes: 0 = Low / 1 = Middle / 2 = High"))
+    st.caption(t("分類：2 = High / 1 = Low / 0 = Not detected", "Classes: 2 = High / 1 = Low / 0 = Not detected"))
+    st.markdown(t("**各クラスの定義**", "**Class definitions**"))
+    st.markdown(t(
+        "| クラス | 定義 |\n| --- | --- |\n| High | TEAC > 1 |\n| Low | TEAC ≤ 1 かつ IC50 ≤ 1000 µg/mL |\n| Not detected | IC50 > 1000 µg/mL |",
+        "| Class | Definition |\n| --- | --- |\n| High | TEAC > 1 |\n| Low | TEAC ≤ 1 and IC50 ≤ 1000 µg/mL |\n| Not detected | IC50 > 1000 µg/mL |",
+    ))

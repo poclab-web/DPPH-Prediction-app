@@ -55,8 +55,18 @@ streamlit run main.py
 分類ページは `best_ordinal_lgbm_pava.pkl` を使用します。
 `ordinal_lightgbm_classification.ipynb` と同じ半径3・2048ビットのMorgan fingerprint、
 累積二値LightGBM、PAVA確率補正で推論します。再学習は不要です。
-結果は `0 = Low / 1 = Middle / 2 = High` と各クラスの確率を表示・CSV出力します。
-ラベル名はノートブックの予測CSV出力に合わせています（一部の図のラベルとは異なります）。
+結果は `0 = Not detected / 1 = Low / 2 = High` と各クラスの確率を表示・CSV出力します。
+表示名は以下の定義に合わせています。
+
+| クラス | 定義 |
+| --- | --- |
+| High | TEAC > 1 |
+| Low | TEAC ≤ 1 かつ IC50 ≤ 1000 µg/mL |
+| Not detected | IC50 > 1000 µg/mL |
+
+予測CSVの確率列は `probability_not_detected`（クラス0）、`probability_low`（クラス1）、`probability_high`（クラス2）です。
+旧出力の `probability_low` はクラス0でしたが、新出力ではクラス1を表します。
+学習済みモデルの数値クラスと推論処理は変更していません。
 Drawの構造寄与表示は、PAVA補正前の2つの分類器に対するSHAPです。
 独自クラスと読み込み処理は `function/classification.py` にあります。
 

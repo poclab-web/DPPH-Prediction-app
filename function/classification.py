@@ -14,7 +14,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, rdDepictor
 from rdkit.DataStructs import ConvertToNumpyArray
 
-CLASS_LABELS = {0: "Low", 1: "Middle", 2: "High"}
+CLASS_LABELS = {0: "Not detected", 1: "Low", 2: "High"}
 MODEL_PATH = Path(__file__).resolve().parents[1] / "best_ordinal_lgbm_pava.pkl"
 
 def smiles_to_morgan_fp_with_info(smiles, radius=3, n_bits=2048):
@@ -37,8 +37,8 @@ class OrdinalLightGBM(BaseEstimator, ClassifierMixin):
     累積二値分類による3クラス順序分類器。
 
     クラス:
-        0 = Low
-        1 = Middle
+        0 = Not detected
+        1 = Low
         2 = High
 
     学習する二値問題:
@@ -363,7 +363,7 @@ def prediction_frame(model, features):
     return pd.DataFrame({
         "Prediction": predictions,
         "Predicted_label": [CLASS_LABELS[int(value)] for value in predictions],
-        "probability_low": probabilities[:, 0],
-        "probability_middle": probabilities[:, 1],
+        "probability_not_detected": probabilities[:, 0],
+        "probability_low": probabilities[:, 1],
         "probability_high": probabilities[:, 2],
     })
