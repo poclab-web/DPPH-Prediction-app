@@ -1,19 +1,35 @@
 # DPPH Analyzer
 
-## 環境構築
+## Streamlit Community Cloudへの公開
+
+クラウドでは `requirements.txt` と `packages.txt` を使用します。
+デプロイ時の **Advanced settings → Python version は3.11** にしてください。
+現在の依存バージョンはPython 3.12以降を対象としていません。
+
+- Repository：公開先のリポジトリ
+- Branch：`master`
+- Main file path：`main.py`
+- `packages.txt`：LightGBM用のOpenMPランタイム（`libgomp1`）
+
+`environment.yml` があるとcondaが優先されるため、ローカル用ファイルは
+`environment.local.yml` という名前にしています。改名・追加をまとめてGitHubに反映してください。
+既存アプリのPythonバージョンを変更する場合は、URL・Secretsなどの設定を控え、
+アプリを削除してPython 3.11を選択して再デプロイします。
+
+## ローカル環境構築
 ### 必要な環境
 - `Python 3.8.20`
 
 ### モジュールのインストール
 以下のコマンドを実行して必要なモジュールをインストールしてください。
 ```sh
-conda env create -f environment.yml
+conda env create -f environment.local.yml
 conda activate streamlit_DPPH
 ```
 ※ Windows環境以外では正常に動作しない可能性があります。
 
 ### 環境ファイルについて
-`environment.yml` は現在のStreamlit分類アプリの実行用です。
+`environment.local.yml` は現在のStreamlit分類アプリの実行用です。
 主要パッケージは動作確認済みのバージョンを指定し、間接依存はconda/pipに解決させます。
 OS固有のビルド番号と個人環境の`prefix`は含めていません。
 
