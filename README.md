@@ -8,22 +8,25 @@
 以下のコマンドを実行して必要なモジュールをインストールしてください。
 ```sh
 conda env create -f environment.yml
+conda activate streamlit_DPPH
 ```
 ※ Windows環境以外では正常に動作しない可能性があります。
 
-### 必要なモジュール一覧 (conda)
-```sh
-numpy == 1.24.3
-pandas == 2.0.3
-streamlit == 1.38.0
-streamlit-ketcher == 0.0.1 (pip)
-rdkit == 2023.03.3
-mordred == 1.2.0
-lightgbm == 4.5.0
-xgboost == 2.1.1
-shap == 0.42.1
-bokeh == 2.4.3
-```
+### 環境ファイルについて
+`environment.yml` は現在のStreamlit分類アプリの実行用です。
+主要パッケージは動作確認済みのバージョンを指定し、間接依存はconda/pipに解決させます。
+OS固有のビルド番号と個人環境の`prefix`は含めていません。
+
+- UI：Streamlit、streamlit-ketcher
+- 特徴量・推論：NumPy、pandas、RDKit、LightGBM、scikit-learn、SciPy、joblib
+
+改修中の回帰用のXGBoost・Mordred、削除済みのFooDB表示用のBokeh、
+学習・ノートブック用のJupyter・SHAPなどは含めていません。
+回帰機能の再開やノートブック実行時には別途依存関係の追加が必要です。
+分類画面の構造寄与表示はLightGBM内蔵のTree SHAPを使うため、SHAPパッケージは不要です。
+
+このファイルは全依存を固定したロックファイルではありません。
+既存の環境はファイルを編集するだけでは変更されません。
 
 ## 使い方
 環境をアクティブにした後、以下のコマンドを実行するとローカル環境でアプリが起動します。
